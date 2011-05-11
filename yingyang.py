@@ -4,8 +4,7 @@ import os.path
 import random
 import sys
 
-import aifc
-import wave
+import audio
 
 from FrameReader import FrameReader
 
@@ -24,34 +23,8 @@ def poisson(length, cuts):
     p.add(rand())
   return sorted(p)
 
-def combine(params, *frames):
-  nchannels = params['nchannels']
-  sampwidth = params['sampwidth']
-  accum = nchannels * [0]
-
-  for frame in frames:
-    for ch in range(nchannels):
-      t = 0
-      for i in range(sampwidth):
-        t = t * 256 + ord(frame[ch * sampwidth + i])
-
-      accum[ch] += t
-
-  parts = []
-  for acc in accum:
-    acc /= len(accum)
-    subparts = []
-    for j in range(sampwidth):
-      subparts.insert(0, chr(acc % 256))
-      acc /= 256;
-    parts.extend(subparts)
-
-  return ''.join(parts)
-
-
-
 def yingyang(files):
-  waves = [wave.open(f, 'rb') for f in files]
+  waves = [audio.openAudio(f, 'rb') for f in files]
 
   names = 'nchannels', 'sampwidth', 'framerate'
   params = dict((n, get_param(waves, n)) for n in names)
@@ -61,7 +34,7 @@ def yingyang(files):
   framesize = params['nchannels'] * params['sampwidth']
 
   for i, f in enumerate(files):
-    out = wave.open('-new'.join(os.path.splitext(f)), 'wb')
+    out = audio.openAudio('-new'.join(os.path.splitext(f)), 'wb')
     for name in names:
       getattr(out, 'set' + name)(params[name])
 
@@ -70,7 +43,10 @@ def yingyang(files):
     mirror = FrameReader(framesize, frames[m], cuts[m], n, True)
 
     for sample in range(n):
-      out.writeframes(combine(params, reader.nextFrame(), mirror.nextFrame()))
+      out.writeframes(audio.combineFrames(params['nchannels'],
+                                          params['sampwidth'],
+                                          reader.nextFrame(),
+                                          mirror.nextFrame()))
 
     out.close()
 
