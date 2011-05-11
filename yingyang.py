@@ -1,7 +1,10 @@
 #!/usr/local/bin/python
 
+import os.path
 import random
 import sys
+
+import aifc
 import wave
 
 from FrameReader import FrameReader
@@ -21,7 +24,6 @@ def poisson(length, cuts):
     p.add(rand())
   return sorted(p)
 
-
 def combine(params, *frames):
   nchannels = params['nchannels']
   sampwidth = params['sampwidth']
@@ -30,19 +32,23 @@ def combine(params, *frames):
   for frame in frames:
     for ch in range(nchannels):
       t = 0
-      for i in range(samplewidth):
-        t = t * 256 + ord(frame[ch * samplewidth + i])
+      for i in range(sampwidth):
+        t = t * 256 + ord(frame[ch * sampwidth + i])
 
       accum[ch] += t
 
   parts = []
   for acc in accum:
+    acc /= len(accum)
     subparts = []
-    for j in range(samplewidth):
-      subparts.insert(0, char(acc % 256))
+    for j in range(sampwidth):
+      subparts.insert(0, chr(acc % 256))
       acc /= 256;
     parts.extend(subparts)
-  return parts.join('')
+
+  return ''.join(parts)
+
+
 
 def yingyang(files):
   waves = [wave.open(f, 'rb') for f in files]
@@ -55,17 +61,17 @@ def yingyang(files):
   framesize = params['nchannels'] * params['sampwidth']
 
   for i, f in enumerate(files):
-    out = wave.open('out-' + f, 'wb')
+    out = wave.open('-new'.join(os.path.splitext(f)), 'wb')
     for name in names:
       getattr(out, 'set' + name)(params[name])
 
     m = len(files) - i - 1
-    reader = FrameReader(framesize, frames[i], cuts[i], length, false)
-    mirror = FrameReader(framesize, frames[m], cuts[m], length, true)
+    reader = FrameReader(framesize, frames[i], cuts[i], n, False)
+    mirror = FrameReader(framesize, frames[m], cuts[m], n, True)
 
-    for sample in range(length):
+    for sample in range(n):
       out.writeframes(combine(params, reader.nextFrame(), mirror.nextFrame()))
 
     out.close()
 
-yingyang(set(sys.argv[1:]))
+yingyang(set(os.path.abspath(s) for s in sys.argv[1:]))
