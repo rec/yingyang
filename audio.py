@@ -54,7 +54,7 @@ def combineFrames(nchannels, sampwidth, *frames):
 def openAudio(f, perms='rb'):
   if f.endswith('.wav'):
     return wave.open(f, perms)
-  elif f.endswith('.aif'):
+  elif f.endswith('.aif') or f.endswith('.aiff'):
     return aifc.open(f, perms)
   else:
     raise ValueError("Can't open file " + f)
