@@ -8,7 +8,8 @@ import audio
 
 from FrameReader import FrameReader
 
-NUMBER_OF_CUTS = 32
+NUMBER_OF_CUTS = 4
+DEBUG = not True
 
 def get_param(waves, name):
   param = set(getattr(w, 'get' + name)() for w in waves)
@@ -33,6 +34,7 @@ def yingyang(files):
   cuts = [poisson(n, NUMBER_OF_CUTS) for f in files]
   framesize = params['nchannels'] * params['sampwidth']
 
+  print cuts
   for i, f in enumerate(files):
     out = audio.openAudio('-new'.join(os.path.splitext(f)), 'wb')
     for name in names:
@@ -42,11 +44,13 @@ def yingyang(files):
     reader = FrameReader(framesize, frames[i], cuts[i], n, False)
     mirror = FrameReader(framesize, frames[m], cuts[m], n, True)
 
+    nchannels, sampwidth = params['nchannels'], params['sampwidth']
     for sample in range(n):
-      out.writeframes(audio.combineFrames(params['nchannels'],
-                                          params['sampwidth'],
-                                          reader.nextFrame(),
-                                          mirror.nextFrame()))
+      f1, f2 = reader.nextFrame(), mirror.nextFrame()
+      frame = audio.combineFrames(nchannels, sampwidth, f1, f2)
+      out.writeframes(frame)
+      if DEBUG:
+        print f1, f2, frame
 
     out.close()
 

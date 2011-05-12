@@ -1,17 +1,24 @@
 #!/usr/local/bin/python
 
 import aifc
+import struct
 import wave
 
-def sampleToNum(sample):
+FORMAT_NAMES = '?bh?i???l'
+
+def getFormat(sampwidth):
+  fmt = FORMAT_NAMES[sampwidth]
+  if fmt is '?':
+    raise ValueError('Unknown sampwidth %d' % sampwidth)
+  return '<' + fmt
+
+def sampleToNum(sample, sampwidth=0):
   """Convert a sample to an unsigned integer.
 
-  >>> sampleToNum('')
-  0
-  >>> '%x' % sampleToNum('\1\1\1\1')
+  >>> '%x' % sampleToNum('\\1\\1\\1\\1')
   '1010101'
   """
-  return reduce(lambda x, y: x * 256 + ord(y), sample, 0)
+  return struct.unpack(getFormat(sampwidth or len(sample)), sample)[0]
 
 
 def numToSample(num, sampwidth):
@@ -21,26 +28,22 @@ def numToSample(num, sampwidth):
   '\\x00\\x00'
 
   >>> numToSample(10452, 2)
-  '(\\xd4'
+  '\\xd4('
 
   >>> numToSample(3224, 2)
-  '\\x0c\\x98'
+  '\\x98\\x0c'
 
-  >>> numToSample(13676, 2)
-  '5l'
+  >>> numToSample(13676 / 2, 2)
+  '\\xb6\\x1a'
 """
-  parts = []
-  for j in range(sampwidth):
-    parts.insert(0, chr(num % 256))
-    num /= 256;
-  return ''.join(parts)
+  return struct.pack(getFormat(sampwidth), num)
 
 
 def combineFrames(nchannels, sampwidth, *frames):
   """Combine separate frames and scale.
 
   >>> combineFrames(1, 2, '(\\xd4', '\\x0c\\x98')
-  '5l'
+  '\\x1a\\xb6'
   """
   accum = nchannels * [0]
 
@@ -48,7 +51,7 @@ def combineFrames(nchannels, sampwidth, *frames):
     for ch in range(nchannels):
       offset = ch * sampwidth
       accum[ch] += sampleToNum(frame[offset : offset + sampwidth])
-  return ''.join(numToSample(a / nchannels, sampwidth) for a in accum)
+  return ''.join(numToSample(a / len(frames), sampwidth) for a in accum)
 
 
 def openAudio(f, perms='rb'):
