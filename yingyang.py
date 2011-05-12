@@ -48,10 +48,28 @@ def yingyang(files):
     for sample in range(n):
       f1, f2 = reader.nextFrame(), mirror.nextFrame()
       frame = audio.combineFrames(nchannels, sampwidth, f1, f2)
+      # print [audio.sampleToNum(f) for f in [f1, f2, frame]]
       out.writeframes(frame)
-      if DEBUG:
-        print f1, f2, frame
+      # if DEBUG:
+        # print f1, f2, frame
 
     out.close()
 
-yingyang(set(os.path.abspath(s) for s in sys.argv[1:]))
+
+def write_audio(name, data):
+  w = audio.openAudio(name, 'wb')
+  w.setnchannels(1)
+  w.setsampwidth(2)
+  w.setframerate(44100)
+  for i in data:
+    w.writeframes(audio.numToSample(i, 2))
+
+
+
+if True:
+  yingyang(set(os.path.abspath(s) for s in sys.argv[1:]))
+
+else:
+  write_audio('t1.wav', range(-5000, 5000, 1))
+  write_audio('t2.wav', range(-25000, 25000, 5))
+  write_audio('s1.wav', 5000 * [-10000, 10000])

@@ -6,7 +6,7 @@ class FrameReader(object):
     if rev:
       self.cuts = list(reversed([(length - x) for x in cuts]))
     else:
-      self.cuts = cuts
+      self.cuts = cuts[:]
     self.cuts += [length]
     self.reversed = rev
 
@@ -18,15 +18,20 @@ class FrameReader(object):
     self.playing = (not rev) or (0 == len(cuts) % 2)
     self.cut_index = 0
     self.index = 0
+    print "init", self.rev(), self.cuts, self.pad
+
+  def rev(self): return self.reversed and 'reversed' or 'forward'
+  def pl(self): return self.playing and 'playing' or 'silent'
 
   def nextFrame(self):
-    self.index += 1
     if self.index >= self.cuts[self.cut_index]:
       self.playing = not self.playing
       self.cut_index += 1
+      print "cut:", self.rev(), self.cut_index, self.pl(), int(self.index / 44.1)
 
     index = self.index - self.pad
-    if not self.playing or index < 0 or index >= self.nframes:
+    self.index += 1
+    if (not self.playing) or index < 0 or index >= self.nframes:
       return self.empty
 
     if self.reversed:

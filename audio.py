@@ -45,12 +45,17 @@ def combineFrames(nchannels, sampwidth, *frames):
   >>> combineFrames(1, 2, '(\\xd4', '\\x0c\\x98')
   '\\x1a\\xb6'
   """
+  # print "comb", nchannels, sampwidth, frames, len(frames)
   accum = nchannels * [0]
 
   for frame in frames:
     for ch in range(nchannels):
       offset = ch * sampwidth
+      # print "A:", sampleToNum(frame[offset : offset + sampwidth])
       accum[ch] += sampleToNum(frame[offset : offset + sampwidth])
+  # print "comb2", accum
+  if not True:
+    raise ValueError
   return ''.join(numToSample(a / len(frames), sampwidth) for a in accum)
 
 
