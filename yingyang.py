@@ -8,7 +8,7 @@ import audio
 
 from FrameReader import FrameReader
 
-NUMBER_OF_CUTS = 4
+NUMBER_OF_CUTS = 24
 DEBUG = not True
 
 def get_param(waves, name):
